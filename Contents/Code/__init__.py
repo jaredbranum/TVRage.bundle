@@ -58,8 +58,11 @@ class TVRageAgent(Agent.TV_Shows):
 
 				if len(episode_data) > 0:
 
-					episode.title = episode_data[0].xpath('./title/text()')[0]
-					episode.summary = episode_data[0].xpath('./summary/text()')[0]
+					title = episode_data[0].xpath('./title/text()')
+					episode.title = title[0] if len(title) > 0 else None
+
+					summary = episode_data[0].xpath('./summary/text()')
+					episode.summary = summary[0] if len(summary) > 0 else None
 
 					# Episode still.
 					still = episode_data[0].xpath('./screencap/text()')
