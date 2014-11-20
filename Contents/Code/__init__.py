@@ -1,5 +1,6 @@
-SHOW_URL = 'http://services.tvrage.com/myfeeds/showinfo.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
 EPISODES_URL = 'http://services.tvrage.com/myfeeds/episode_list.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
+SEARCH_URL = 'http://services.tvrage.com/myfeeds/search.php?key=P8q4BaUCuRJPYWys3RBV&show=%s'
+SHOW_URL = 'http://services.tvrage.com/myfeeds/showinfo.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
 
 ####################################################################################################
 def Start():
@@ -11,21 +12,16 @@ class TVRageAgent(Agent.TV_Shows):
 
 	name = 'TVRage'
 	languages = [Locale.Language.English]
-	primary_provider = False
-	contributes_to = [
-		'com.plexapp.agents.themoviedb'
-	]
+	primary_provider = True
+	contributes_to = None
 
 	def search(self, results, media, lang):
 
-		# Get the TVRage id from the Movie Database Agent
-		tvrage_id = Core.messaging.call_external_function(
-			'com.plexapp.agents.themoviedb',
-			'MessageKit:GetTvRageId',
-			kwargs = dict(
-				tmdb_id = media.primary_metadata.id
-			)
-		)
+		search_results = XML.ElementFromURL(SEARCH_URL % media.show)
+		show_id = search_results.xpath(("/Results/show/showid"
+			"[preceding-sibling::name='{0}' or "
+			"following-sibling::name='{0}']").format(media.show))
+		tvrage_id = showid[0].text if showid else None
 
 		if tvrage_id:
 			results.Append(MetadataSearchResult(
