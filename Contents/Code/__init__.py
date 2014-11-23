@@ -1,3 +1,5 @@
+import urllib
+
 EPISODES_URL = 'http://services.tvrage.com/myfeeds/episode_list.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
 SEARCH_URL = 'http://services.tvrage.com/myfeeds/search.php?key=P8q4BaUCuRJPYWys3RBV&show=%s'
 SHOW_URL = 'http://services.tvrage.com/myfeeds/showinfo.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
@@ -17,16 +19,26 @@ class TVRageAgent(Agent.TV_Shows):
 
 	def search(self, results, media, lang):
 
-		search_results = XML.ElementFromURL(SEARCH_URL % media.show)
+		search_results = XML.ElementFromURL(
+			SEARCH_URL % urllib.quote(media.show),
+			timeout=20,
+		)
 		show_id = search_results.xpath(("/Results/show/showid"
 			"[preceding-sibling::name='{0}' or "
 			"following-sibling::name='{0}']").format(media.show))
-		tvrage_id = showid[0].text if showid else None
+		start_year = search_results.xpath(("/Results/show/started"
+			"[preceding-sibling::name='{0}' or "
+			"following-sibling::name='{0}']").format(media.show))
+		tvrage_id = str(show_id[0].text) if show_id else None
+		year = int(start_year[0].text) if start_year else None
 
 		if tvrage_id:
 			results.Append(MetadataSearchResult(
-				id = tvrage_id,
-				score = 100
+				id=tvrage_id,
+				name=media.show,
+				score=100,
+				year=year,
+				lang=Locale.Language.English,
 			))
 		else:
 			Log(' *** Could not find TVRage id for "%s"' % media.primary_metadata.title)
