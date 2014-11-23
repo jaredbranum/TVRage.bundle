@@ -1,4 +1,5 @@
 import urllib
+from datetime import datetime
 
 EPISODES_URL = 'http://services.tvrage.com/myfeeds/episode_list.php?key=P8q4BaUCuRJPYWys3RBV&sid=%s'
 SEARCH_URL = 'http://services.tvrage.com/myfeeds/search.php?key=P8q4BaUCuRJPYWys3RBV&show=%s'
@@ -46,11 +47,23 @@ class TVRageAgent(Agent.TV_Shows):
 	def update(self, metadata, media, lang):
 
 		show_xml = XML.ElementFromURL(SHOW_URL % metadata.id)
+		episodes_xml = XML.ElementFromURL(EPISODES_URL % metadata.id)
 
 		metadata.title = show_xml.xpath('/Showinfo/showname/text()')[0]
 		metadata.summary = show_xml.xpath('/Showinfo/summary/text()')[0]
+		metadata.genres = [genre.text for genre in show_xml.xpath('/Showinfo/genres')]
+		metadata.duration = int(show_xml.xpath('/Showinfo/runtime/text()')[0]) * 60000 # ms per minute
+		metadata.studio = show_xml.xpath('/Showinfo/network/text()')[0]
 
-		episodes_xml = XML.ElementFromURL(EPISODES_URL % metadata.id)
+		try:
+			startdate = datetime.strptime(show_xml.xpath('/Showinfo/startdate/text()')[0], '%b/%d/%Y')
+		except ValueError:
+			startdate = None
+		metadata.originally_available_at = startdate
+
+		show_image = show_xml.xpath('/Showinfo/image/text()')
+		if show_image and show_image[0]:
+			metadata.posters[show_image[0]] = Proxy.Media(HTTP.Request(show_image[0]).content)
 
 		# Loop over seasons.
 		for s in media.seasons:
